@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AyuGram — кастомный клиент Telegram</title>
+<meta name="description" content="AyuGram — модифицированный клиент Telegram: режим призрака, антиудаление, кастомизация. Бесплатно для Windows.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== ПАЛИТРА: строго чёрный/белый/серый ===== */
+:root{
+  --bg:#0a0a0a; --bg-2:#0f0f0f; --bg-3:#161616;
+  --white:#ffffff; --gray-1:#cccccc; --gray-2:#888888; --gray-3:#555555;
+  --line:#333333; --line-2:#222222;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:'Inter',-apple-system,'Helvetica Neue',sans-serif;
+  line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--white);color:var(--bg)}
+a:focus-visible,button:focus-visible{outline:1px solid var(--white);outline-offset:3px}
+h1,h2,h3{line-height:1.1;letter-spacing:-.02em}
+
+/* ===== УТИЛИТЫ ===== */
+.container{width:min(100% - 40px,1140px);margin-inline:auto}
+.section{padding:96px 0;border-top:1px solid var(--line-2)}
+.sec-head{margin-bottom:56px}
+.sec-num{display:block;font-size:13px;font-weight:500;letter-spacing:.2em;color:var(--gray-3);margin-bottom:14px}
+.sec-head h2{font-size:clamp(30px,5vw,52px);font-weight:700}
+.sec-sub{color:var(--gray-2);max-width:560px;margin-top:14px;font-size:16px}
+
+/* ===== КНОПКИ: инверсия при наведении ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:14px 32px;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.02em;
+  text-decoration:none;cursor:pointer;background:var(--bg);color:var(--white);
+  border:1px solid var(--white);transition:background .2s,color .2s,border-color .2s;
+}
+.btn svg{width:17px;height:17px;stroke:currentColor}
+.btn:hover{background:var(--white);color:var(--bg)}
+.btn-sm{padding:9px 20px;font-size:13.5px}
+
+/* ===== ХЕДЕР ===== */
+.header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line-2);transition:border-color .3s;
+}
+.header.scrolled{border-bottom-color:var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+.logo-mark{width:14px;height:14px;border:1.5px solid var(--white);position:relative}
+.logo-mark::after{content:"";position:absolute;inset:3px;background:var(--white)}
+.nav-links{display:none;list-style:none;gap:36px;align-items:center}
+.nav-links a{color:var(--gray-2);text-decoration:none;font-size:14px;transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+
+/* ===== ПОЯВЛЕНИЕ ПРИ СКРОЛЛЕ ===== */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;transition-delay:var(--d,0s)}
+.reveal.in{opacity:1;transform:none}
+
+/* ==================== 1. HERO ==================== */
+.hero{padding:150px 0 96px}
+.hero-tag{font-size:12px;font-weight:500;letter-spacing:.25em;text-transform:uppercase;color:var(--gray-2);margin-bottom:26px}
+.hero h1{font-size:clamp(60px,14vw,150px);font-weight:800;letter-spacing:-.04em;margin-bottom:28px}
+.hero-sub{color:var(--gray-1);font-size:clamp(16px,2.2vw,20px);max-width:620px;margin-bottom:40px}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.hero-meta{font-size:13px;color:var(--gray-3);letter-spacing:.04em}
+
+/* ----- Мокап приложения (нарисован на CSS, без файлов изображений) ----- */
+.mock-wrap{margin-top:72px;position:relative}
+.app-mock{border:1px solid var(--line);background:var(--bg-2)}
+.app-winbar{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line-2)}
+.app-winbar i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.app-winbar i:nth-child(2){background:#3d3d3d}
+.app-winbar i:nth-child(3){background:#4d4d4d}
+.app-winbar span{margin-left:10px;font-size:12.5px;color:var(--gray-2)}
+.app-body{display:flex;min-height:430px}
+.app-side{width:270px;border-right:1px solid var(--line-2);padding:14px;display:flex;flex-direction:column;gap:6px}
+.app-search{border:1px solid var(--line);background:var(--bg-3);color:var(--gray-3);font-size:12.5px;padding:9px 12px;margin-bottom:8px}
+.chat-row{display:flex;align-items:center;gap:11px;padding:10px;border:1px solid transparent}
+.chat-row.act{background:var(--bg-3);border-color:var(--line)}
+.ava{width:38px;height:38px;border:1px solid var(--gray-2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--gray-1);flex-shrink:0}
+.chat-row.act .ava{background:#e8e8e8;color:#0a0a0a;border-color:#e8e8e8}
+.cr-txt{min-width:0;flex:1}
+.cr-top{display:flex;justify-content:space-between;gap:8px}
+.cr-name{font-size:13.5px;font-weight:600;color:var(--gray-1)}
+.cr-time{font-size:10.5px;color:var(--gray-3)}
+.cr-msg{font-size:12px;color:var(--gray-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-chat{flex:1;display:flex;flex-direction:column;background:var(--bg);min-width:0}
+.chat-head{display:flex;align-items:center;gap:11px;padding:13px 20px;border-bottom:1px solid var(--line-2)}
+.chat-head .ava{width:34px;height:34px;font-size:13px}
+.ch-name{font-size:14px;font-weight:600}
+.ch-status{font-size:11.5px;color:var(--gray-3)}
+.chat-msgs{flex:1;padding:22px;display:flex;flex-direction:column;gap:10px}
+.bub{max-width:72%;padding:9px 14px;font-size:13.5px;border-radius:10px;color:var(--gray-1);background:var(--bg-3);border:1px solid var(--line)}
+.bub.me{margin-left:auto;background:#e8e8e8;color:#111;border-color:#e8e8e8}
+.bub .tag{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-2);margin-bottom:3px}
+.bub.dashed{border-style:dashed;border-color:#4d4d4d}
+.typing{font-size:12px;color:var(--gray-3);padding:2px 4px}
+/* Плавающие бейджи поверх мокапа */
+.mock-chip{
+  position:absolute;padding:10px 18px;font-size:13px;font-weight:600;letter-spacing:.03em;
+  background:rgba(10,10,10,.92);border:1px solid var(--white);color:var(--white);
+  animation:floaty 5s ease-in-out infinite;
+}
+.chip-1{top:-16px;right:4%}
+.chip-2{bottom:-16px;left:4%;animation-delay:2.5s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+/* Если есть реальный скриншот — раскомментируйте и положите файл рядом:
+.real-shot{width:100%;display:block;border:1px solid var(--line)} */
+
+/* ==================== 2. ВОЗМОЖНОСТИ ==================== */
+.grid-features{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line-2);border:1px solid var(--line-2)}
+.f-card{background:var(--bg);padding:36px 30px;transition:background .25s}
+.f-card:hover{background:var(--bg-2)}
+.f-ico{width:44px;height:44px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+.f-ico svg{width:21px;height:21px;stroke:var(--white);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.f-card h3{font-size:17px;font-weight:600;margin-bottom:10px}
+.f-card p{color:var(--gray-2);font-size:14.5px}
+
+/* ==================== 3. СКРИНШОТЫ ==================== */
+.shots-row{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px;scrollbar-width:none}
+.shots-row::-webkit-scrollbar{display:none}
+.shot{flex:0 0 min(420px,86%);scroll-snap-align:start;border:1px solid var(--line);background:var(--bg-2)}
+.win-bar{display:flex;align-items:center;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line-2)}
+.win-bar i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.win-bar i:nth-child(2){background:#3d3d3d}
+.win-bar i:nth-child(3){background:#4d4d4d}
+.win-bar span{margin-left:8px;font-size:12px;color:var(--gray-2)}
+.shot-body{padding:16px;min-height:260px}
+.sbub{max-width:72%;padding:8px 12px;font-size:12.5px;border-radius:10px;color:var(--gray-1);background:var(--bg-3);border:1px solid var(--line);margin-bottom:8px}
+.sbub.me{margin-left:auto;background:#e8e8e8;color:#111;border-color:#e8e8e8}
+.sbub .tag{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-2);margin-bottom:3px}
+.sbub.dashed{border-style:dashed;border-color:#4d4d4d}
+.hist{max-width:72%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--gray-2);margin-bottom:8px}
+.hist b{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-3);font-weight:600;margin-bottom:6px}
+.hist div span{color:var(--gray-3)}
+.prow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line-2)}
+.prow:last-child{border-bottom:none}
+.ptxt{flex:1}
+.ptxt b{display:block;font-size:13px;font-weight:500;color:var(--gray-1)}
+.ptxt small{font-size:11px;color:var(--gray-3)}
+.sw{width:34px;height:18px;border-radius:9px;background:var(--bg-3);border:1px solid var(--line);position:relative;flex-shrink:0}
+.sw::after{content:"";position:absolute;top:2.5px;left:3px;width:11px;height:11px;border-radius:50%;background:var(--gray-2)}
+.sw.on{background:#e8e8e8;border-color:#e8e8e8}
+.sw.on::after{left:18px;background:#0a0a0a}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 0}
+.th{aspect-ratio:16/10;border:1px solid var(--line)}
+.th.sel{outline:1px solid var(--white);outline-offset:2px}
+.themes-cap{font-size:11px;color:var(--gray-3);font-family:ui-monospace,monospace;margin-top:12px}
+
+/* ==================== 4. УСТАНОВКА ==================== */
+.steps{list-style:none;max-width:820px}
+.steps li{display:grid;grid-template-columns:88px 1fr;gap:20px;align-items:start;padding:34px 0;border-top:1px solid var(--line-2)}
+.steps li:last-child{border-bottom:1px solid var(--line-2)}
+.num{font-size:clamp(44px,7vw,64px);font-weight:800;line-height:.9;letter-spacing:-.03em;color:transparent;-webkit-text-stroke:1px var(--gray-3)}
+@supports not (-webkit-text-stroke:1px #000){.num{color:var(--bg-3)}}
+.steps h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.steps p{color:var(--gray-2);font-size:15px}
+.steps a{color:var(--white);text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--gray-3);transition:text-decoration-color .2s}
+.steps a:hover{text-decoration-color:var(--white)}
+
+/* ==================== 5. FAQ ==================== */
+.faq-list{max-width:820px;border:1px solid var(--line)}
+.faq-item+.faq-item{border-top:1px solid var(--line)}
+.faq-q{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:22px 24px;background:none;border:none;cursor:pointer;
+  font-family:inherit;font-size:16px;font-weight:600;color:var(--white);text-align:left;transition:background .2s;
+}
+.faq-q:hover{background:var(--bg-2)}
+.ind{position:relative;width:14px;height:14px;flex-shrink:0;transition:transform .3s ease}
+.ind::before,.ind::after{content:"";position:absolute;background:var(--gray-2);transition:background .2s}
+.ind::before{left:0;top:6.5px;width:14px;height:1.5px}
+.ind::after{left:6.5px;top:0;width:1.5px;height:14px}
+.faq-item.open .ind{transform:rotate(45deg)}
+.faq-item.open .ind::before,.faq-item.open .ind::after{background:var(--white)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.faq-a p{padding:0 24px 24px;color:var(--gray-2);font-size:15px;max-width:640px}
+
+/* ==================== 6. FOOTER ==================== */
+.footer{border-top:1px solid var(--line-2);padding:60px 0 36px}
+.foot-top{display:flex;flex-direction:column;gap:32px;margin-bottom:48px}
+.foot-brand p{color:var(--gray-3);font-size:13px;max-width:420px;margin-top:14px}
+.foot-links{display:flex;gap:28px;flex-wrap:wrap}
+.foot-links a{color:var(--gray-2);text-decoration:none;font-size:14px;transition:color .2s}
+.foot-links a:hover{color:var(--white)}
+.foot-bottom{border-top:1px solid var(--line-2);padding-top:26px;display:flex;flex-direction:column;gap:8px}
+.foot-bottom span{color:var(--gray-3);font-size:12.5px}
+
+/* ===== АДАПТИВ ===== */
+@media (min-width:768px){
+  .nav-links{display:flex}
+  .grid-features{grid-template-columns:repeat(2,1fr)}
+  .section{padding:120px 0}
+  .foot-top{flex-direction:row;justify-content:space-between;align-items:flex-start}
+  .foot-bottom{flex-direction:row;justify-content:space-between}
+}
+@media (min-width:1200px){
+  .grid-features{grid-template-columns:repeat(3,1fr)}
+  .shots-row{overflow:visible}
+  .shot{flex:1 1 0}
+}
+/* На мобильных: скрываем сайдбар и бейджи мокапа */
+@media (max-width:767px){
+  .app-side{display:none}
+  .mock-chip{display:none}
+  .app-body{min-height:340px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ХЕДЕР ===== -->
+<header class="header" id="header">
+  <div class="container nav">
+    <a href="#" class="logo"><span class="logo-mark" aria-hidden="true"></span>AyuGram</a>
+    <ul class="nav-links">
+      <li><a href="#features">Возможности</a></li>
+      <li><a href="#screenshots">Скриншоты</a></li>
+      <li><a href="#install">Установка</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <!-- ССЫЛКА НЕ МЕНЯТЬ -->
+    <a class="btn btn-sm" href="https://github.com/Ayugram-dekstop/Ayugram-dekstop.github.io/releases/download/Ayugram/Ayugram.exe" target="_blank" rel="noopener">Скачать</a>
+  </div>
+</header>
+
+<!-- ==================== 1. HERO ==================== -->
+<section class="hero">
+  <div class="container">
+    <p class="hero-tag reveal">Кастомный клиент Telegram</p>
+    <h1 class="reveal" style="--d:.08s">AyuGram</h1>
+    <p class="hero-sub reveal" style="--d:.16s">Кастомизированный клиент Telegram с расширенными функциями приватности и кастомизации.</p>
+    <div class="hero-btns reveal" style="--d:.24s">
+      <!-- ССЫЛКА НЕ МЕНЯТЬ. Единственная кнопка в hero -->
+      <a class="btn" href="https://github.com/Ayugram-dekstop/Ayugram-dekstop.github.io/releases/download/Ayugram/Ayugram.exe" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Скачать
+      </a>
+    </div>
+    <p class="hero-meta reveal" style="--d:.3s">Windows 7/8/10/11 &nbsp;·&nbsp; Бесплатно &nbsp;·&nbsp; Открытый исходный код</p>
+
+    <!-- Мокап интерфейса: нарисован на CSS, файлы изображений не нужны.
+         Чтобы вставить РЕАЛЬНЫЙ скриншот — раскомментируйте строку ниже
+         и положите файл screenshot.png рядом с index.html:
+    <img class="real-shot" src="screenshot.png" alt="Интерфейс AyuGram">
+    -->
+    <div class="mock-wrap reveal" style="--d:.38s">
+      <div class="mock-chip chip-1">Режим призрака активен</div>
+      <div class="mock-chip chip-2">Удалённое восстановлено</div>
+      <div class="app-mock">
+        <div class="app-winbar"><i></i><i></i><i></i><span>AyuGram</span></div>
+        <div class="app-body">
+          <!-- Список чатов -->
+          <div class="app-side">
+            <div class="app-search">Поиск</div>
+            <div class="chat-row act"><div class="ava">А</div><div class="cr-txt"><div class="cr-top"><span class="cr-name">Алекс</span><span class="cr-time">14:02</span></div><div class="cr-msg">печатает…</div></div></div>
+            <div class="chat-row"><div class="ava">М</div><div class="cr-txt"><div class="cr-top"><span class="cr-name">Мария</span><span class="cr-time">13:47</span></div><div class="cr-msg">Скинь презентацию</div></div></div>
+            <div class="chat-row"><div class="ava">Д</div><div class="cr-txt"><div class="cr-top"><span class="cr-name">Дизайн-чат</span><span class="cr-time">12:15</span></div><div class="cr-msg">новый макет готов</div></div></div>
+            <div class="chat-row"><div class="ava">И</div><div class="cr-txt"><div class="cr-top"><span class="cr-name">Игорь</span><span class="cr-time">Вчера</span></div><div class="cr-msg">Сообщение удалено</div></div></div>
+          </div>
+          <!-- Открытый чат -->
+          <div class="app-chat">
+            <div class="chat-head">
+              <div class="ava">А</div>
+              <div><div class="ch-name">Алекс</div><div class="ch-status">был(а) недавно</div></div>
+            </div>
+            <div class="chat-msgs">
+              <div class="bub">Привет! Скинешь запись звонка?</div>
+              <div class="bub me">Уже отправляю</div>
+              <div class="bub dashed"><span class="tag">Удалено собеседником · восстановлено</span>Держи: запись_звонка.mp4</div>
+              <div class="bub me">AyuGram всё помнит.</div>
+              <div class="typing">печатает…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. ВОЗМОЖНОСТИ ==================== -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="sec-num">01 / Возможности</span>
+      <h2>Больше, чем мессенджер</h2>
+      <p class="sec-sub">Функции, которых нет в официальном клиенте — от приватности до полной кастомизации.</p>
+    </div>
+
+    <div class="grid-features">
+      <div class="f-card reveal">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></div>
+        <h3>Приватность</h3>
+        <p>Скрывайте статус «онлайн», не отправляйте отметку «прочитано». Антиудаление сохраняет сообщения, даже если собеседник их удалил.</p>
+      </div>
+      <div class="f-card reveal" style="--d:.06s">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></div>
+        <h3>Кастомизация интерфейса</h3>
+        <p>Тонкая настройка внешнего вида: темы, шрифты, размеры, поведение элементов. Интерфейс под ваш стиль, а не наоборот.</p>
+      </div>
+      <div class="f-card reveal" style="--d:.12s">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10.5l2.33-1.75L9.67 20.5 12 18.75l2.33 1.75 2.34-1.75L19 20.5V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".9"/><circle cx="14.5" cy="10.5" r=".9"/></svg></div>
+        <h3>Режим призрака</h3>
+        <p>Ghost Mode: читайте, печатайте и записывайте голосовые, не оставляя никаких следов. Вы сами решаете, когда появляться онлайн.</p>
+      </div>
+      <div class="f-card reveal" style="--d:.18s">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <h3>Расширенные настройки чатов</h3>
+        <p>Гибкие параметры для каждого чата: фильтры, сортировка, формат отображения, детали, скрытые в официальном клиенте.</p>
+      </div>
+      <div class="f-card reveal" style="--d:.24s">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+        <h3>Плагины и темы</h3>
+        <p>Расширяйте клиент плагинами и устанавливайте готовые темы из сообщества или создавайте собственные.</p>
+      </div>
+      <div class="f-card reveal" style="--d:.3s">
+        <div class="f-ico"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <h3>Открытый исходный код</h3>
+        <p>Весь исходный код открыт: любой может проверить, как работает клиент, предложить улучшение или собрать свою версию.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 3. СКРИНШОТЫ ==================== -->
+<section class="section" id="screenshots">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="sec-num">02 / Скриншоты</span>
+      <h2>Интерфейс</h2>
+      <p class="sec-sub">Знакомый Telegram — с расширенными возможностями внутри.</p>
+    </div>
+
+    <div class="shots-row reveal" style="--d:.1s">
+      <div class="shot">
+        <div class="win-bar"><i></i><i></i><i></i><span>Чат</span></div>
+        <div class="shot-body">
+          <div class="sbub">Привет! Ты видел, что я написал вчера?</div>
+          <div class="sbub me">Видел, сообщение сохранилось.</div>
+          <div class="sbub dashed"><span class="tag">Удалено · восстановлено</span>Ой, я же удалил его…</div>
+          <div class="sbub me">AyuGram всё помнит.</div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="win-bar"><i></i><i></i><i></i><span>Приватность</span></div>
+        <div class="shot-body">
+          <div class="prow"><div class="ptxt"><b>Режим призрака</b><small>Никаких следов присутствия</small></div><span class="sw on"></span></div>
+          <div class="prow"><div class="ptxt"><b>Скрывать «прочитано»</b><small>Без отметок о прочтении</small></div><span class="sw on"></span></div>
+          <div class="prow"><div class="ptxt"><b>Скрывать «в сети»</b><small>Статус виден только вам</small></div><span class="sw on"></span></div>
+          <div class="prow"><div class="ptxt"><b>Антиудаление</b><small>Удалённое остаётся у вас</small></div><span class="sw on"></span></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="win-bar"><i></i><i></i><i></i><span>Темы</span></div>
+        <div class="shot-body">
+          <div class="themes">
+            <div class="th sel" style="background:#0a0a0a"></div>
+            <div class="th" style="background:#1f1f1f"></div>
+            <div class="th" style="background:#333333"></div>
+            <div class="th" style="background:#4d4d4d"></div>
+            <div class="th" style="background:#737373"></div>
+            <div class="th" style="background:#b3b3b3"></div>
+          </div>
+          <p class="themes-cap">Акцент: #FFFFFF · Шрифт: Inter</p>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="win-bar"><i></i><i></i><i></i><span>История правок</span></div>
+        <div class="shot-body">
+          <div class="sbub">Встречаемся в 19:00, как договаривались.</div>
+          <div class="hist">
+            <b>Отредактировано · 2 версии</b>
+            <div>v2 · 14:02 — <span>«Встречаемся в 19:00…»</span></div>
+            <div>v1 · 13:58 — <span>«Встречаемся в 18:00…»</span></div>
+          </div>
+          <div class="sbub me">Теперь видно исходное время.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 4. УСТАНОВКА ==================== -->
+<section class="section" id="install">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="sec-num">03 / Установка</span>
+      <h2>Четыре шага</h2>
+      <p class="sec-sub">От скачивания до первого запуска — меньше двух минут.</p>
+    </div>
+
+    <ol class="steps">
+      <li class="reveal">
+        <span class="num" aria-hidden="true">1</span>
+        <div>
+          <h3>Скачайте установщик</h3>
+          <p>Загрузите актуальную версию Ayugram.exe — <!-- ССЫЛКА НЕ МЕНЯТЬ --><a href="https://github.com/Ayugram-dekstop/Ayugram-dekstop.github.io/releases/download/Ayugram/Ayugram.exe" target="_blank" rel="noopener">прямая ссылка на скачивание</a>.</p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:.06s">
+        <span class="num" aria-hidden="true">2</span>
+        <div>
+          <h3>Запустите установку</h3>
+          <p>Если Windows покажет предупреждение SmartScreen, нажмите «Подробнее» → «Выполнить в любом случае».</p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:.12s">
+        <span class="num" aria-hidden="true">3</span>
+        <div>
+          <h3>Войдите в аккаунт</h3>
+          <p>Отсканируйте QR-код в официальном приложении Telegram (Настройки → Устройства) или войдите по номеру телефона.</p>
+        </div>
+      </li>
+      <li class="reveal" style="--d:.18s">
+        <span class="num" aria-hidden="true">4</span>
+        <div>
+          <h3>Включите нужные функции</h3>
+          <p>Откройте настройки AyuGram и активируйте режим призрака, антиудаление и кастомизацию. Готово.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 5. FAQ ==================== -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="sec-num">04 / FAQ</span>
+      <h2>Частые вопросы</h2>
+    </div>
+
+    <div class="faq-list reveal" style="--d:.1s">
+      <div class="faq-item">
+        <button class="faq-q" type="button">Чем AyuGram отличается от официального Telegram?<span class="ind" aria-hidden="true"></span></button>
+        <div class="faq-a"><p>AyuGram построен на открытом коде Telegram и добавляет функции приватности (режим призрака, антиудаление, история правок), расширенную кастомизацию и поддержку плагинов. Весь функционал официального клиента сохраняется.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button">Это безопасно? Могут ли забанить аккаунт?<span class="ind" aria-hidden="true"></span></button>
+        <div class="faq-a"><p>Исходный код открыт — его можно проверить самостоятельно. При этом модифицированные клиенты формально нарушают пользовательское соглашение Telegram, поэтому теоретический риск ограничения аккаунта существует. Используйте на свой страх и риск.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button">Какие платформы поддерживаются?<span class="ind" aria-hidden="true"></span></button>
+        <div class="faq-a"><p>На этой странице доступна версия для Windows 7/8/10/11. Сборки под другие платформы, если они выпущены, можно найти на странице проекта.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button">Нужен ли отдельный аккаунт?<span class="ind" aria-hidden="true"></span></button>
+        <div class="faq-a"><p>Нет. AyuGram работает с вашим существующим аккаунтом Telegram: войдите по QR-коду или номеру телефона — все чаты и контакты подтянутся автоматически.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button">Сколько это стоит?<span class="ind" aria-hidden="true"></span></button>
+        <div class="faq-a"><p>Бесплатно. Проект развивается на энтузиазме и поддержке сообщества.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 6. FOOTER ==================== -->
+<footer class="footer">
+  <div class="container">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="#" class="logo"><span class="logo-mark" aria-hidden="true"></span>AyuGram</a>
+        <p>AyuGram — сторонний модифицированный клиент Telegram. Проект не связан с Telegram Messenger Inc. Все товарные знаки принадлежат их владельцам.</p>
+      </div>
+      <nav class="foot-links">
+        <!-- ЗАМЕНИ "#" на ссылку своего Telegram-канала -->
+        <a href="#">Telegram-канал</a>
+        <!-- ЗАМЕНИ "#" на ссылку для донатов -->
+        <a href="#">Донат</a>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year"></span> AyuGram</span>
+      <span>Не является официальным приложением Telegram</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Появление секций при скролле */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* Хедер при скролле */
+const header = document.getElementById('header');
+addEventListener('scroll', () => {
+  header.classList.toggle('scrolled', scrollY > 10);
+}, { passive: true });
+
+/* FAQ-аккордеон */
+const items = document.querySelectorAll('.faq-item');
+items.forEach(item => {
+  const btn = item.querySelector('.faq-q');
+  const panel = item.querySelector('.faq-a');
+  btn.addEventListener('click', () => {
+    const isOpen = item.classList.contains('open');
+    items.forEach(i => {
+      i.classList.remove('open');
+      i.querySelector('.faq-a').style.maxHeight = null;
+    });
+    if (!isOpen) {
+      item.classList.add('open');
+      panel.style.maxHeight = panel.scrollHeight + 'px';
+    }
+  });
+});
+
+/* Автогод */
+document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
